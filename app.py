@@ -415,5 +415,147 @@ def game_creator():
 def debug_templates():
     return str(os.listdir('templates/game2'))  # Должен показать ['guesser.html', 'creator.html']
 
+
+
+# Добавим в app.py
+@socketio.on('process_question')
+def handle_process_question(data):
+    room = data['room']
+    session_id = data['session_id']
+    question = data['question']
+    
+    if room not in room_roles or session_id != room_roles[room].get('guesser'):
+        return {'error': 'Недостаточно прав'}
+    
+    # Получаем загаданное число от создателя
+    secret_number = rooms[room].get('secret_number')
+    if secret_number is None:
+        return {'error': 'Число еще не загадано'}
+    
+    # Обрабатываем вопрос
+    response, dim_numbers = process_number_question(secret_number, question)
+    
+    # Отправляем ответ всем в комнате
+    emit('question_response', {
+        'question': question,
+        'response': response,
+        'dim_numbers': dim_numbers
+    }, room=room)
+    
+    return {'status': 'ok'}
+
+def process_number_question(number, question):
+    question = question.lower().strip()
+    dim_numbers = []
+    response = "Не понимаю вопрос"
+    
+    try:
+        # Обработка разных типов вопросов
+        if question.startswith('число больше'):
+            x = int(question.split()[2].rstrip('?'))
+            response = "Да" if number > x else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if not n > x] if number > x else [n for n in range(-100, 101) if n > x]
+            
+        elif question.startswith('число меньше'):
+            x = int(question.split()[2].rstrip('?'))
+            response = "Да" if number < x else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if not n < x] if number < x else [n for n in range(-100, 101) if n < x]
+            
+        elif question == 'число простое' or question == 'число простое?':
+            is_prime = is_number_prime(number)
+            response = "Да" if is_prime else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if is_number_prime(n) != is_prime]
+            
+        elif question == 'число четное' or question == 'число четное?':
+            response = "Да" if number % 2 == 0 else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if n % 2 != (0 if response == "Да" else 1)]
+            
+        elif question == 'число нечетное' or question == 'число нечетное?':
+            response = "Да" if number % 2 != 0 else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if n % 2 != (1 if response == "Да" else 0)]
+            
+        elif question == 'число двузначное' or question == 'число двузначное?':
+            response = "Да" if 10 <= abs(number) < 100 else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if (10 <= abs(n) < 100) != (response == "Да")]
+            
+        elif question == 'число однозначное' or question == 'число однозначное?':
+            response = "Да" if 0 <= abs(number) < 10 else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if (0 <= abs(n) < 10) != (response == "Да")]
+            
+        elif question == 'число трехзначное' or question == 'число трехзначное?':
+            response = "Да" if 100 <= abs(number) < 100 else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if (100 <= abs(n) < 100) != (response == "Да")]
+            
+        elif question == 'число положительное' or question == 'число положительное?':
+            response = "Да" if number > 0 else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if (n > 0) != (response == "Да")]
+            
+        elif question == 'число отрицательное' or question == 'число отрицательное?':
+            response = "Да" if number < 0 else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if (n < 0) != (response == "Да")]
+            
+        elif question == 'число является квадратом' or question == 'число является квадратом?':
+            root = int(number**0.5)
+            response = "Да" if root**2 == number else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if (int(n**0.5)**2 == n) != (response == "Да")]
+            
+        elif question == 'число является кубом' or question == 'число является кубом?':
+            root = round(number**(1/3))
+            response = "Да" if root**3 == number else "Нет"
+            dim_numbers = [n for n in range(-100, 101) if (round(n**(1/3))**3 == n) != (response == "Да")]
+            
+        elif question.startswith('это число'):
+            guess = int(question.split()[2].rstrip('?'))
+            if guess == number:
+                response = f"Поздравляем! Вы угадали число {number}!"
+                # Отправляем событие победы
+                emit('game_won', {
+                    'winner': session_id,
+                    'secret': number
+                }, room=room)
+            else:
+                response = f"Нет, это не число {guess}. Попробуйте еще раз!"
+                
+    except (ValueError, IndexError):
+        response = "Не понимаю вопрос. Пожалуйста, задайте вопрос в правильном формате."
+    
+    return response, dim_numbers
+
+def is_number_prime(n):
+    if n <= 1:
+        return False
+    if n <= 3:
+        return True
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+    return True
+    
+@socketio.on('set_secret_number')
+def handle_set_secret_number(data):
+    room = data['room']
+    secret_number = data['secret_number']
+    session_id = data.get('session_id')
+    
+    if room not in room_roles or session_id != room_roles[room].get('creator'):
+        return {'error': 'Недостаточно прав'}
+    
+    # Сохраняем загаданное число
+    if room not in rooms:
+        rooms[room] = {}
+    rooms[room]['secret_number'] = secret_number
+    
+    emit('secret_number_set', {
+        'secret_number': secret_number
+    }, to=session_to_sid[session_id])
+    
+    return {'status': 'ok'}
+
+
+
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
