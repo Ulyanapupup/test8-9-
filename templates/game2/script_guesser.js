@@ -58,27 +58,33 @@ function sendMessage() {
     const msg = chatInput.value.trim();
     if (!msg) return;
 
-    // Отображаем своё сообщение
-    addMessage("Вы", msg);
+    // Не добавляем сообщение здесь - оно придет с сервера
+    // addMessage("Вы", msg); // УБИРАЕМ ЭТУ СТРОКУ
 
-    // Проверяем, является ли сообщение вопросом о числе
-    if (checkForQuestion(msg)) {
-        socket.emit("process_question", {
-            room: room,
-            session_id: sessionId,
-            question: msg
-        });
-    } else {
-        // Отправляем обычное сообщение
-        socket.emit("chat_message", {
-            room: room,
-            session_id: sessionId,
-            message: msg
-        });
-    }
+    // Отправляем на сервер
+    socket.emit("chat_message", {
+        room: room,
+        session_id: sessionId,
+        message: msg
+    });
 
     chatInput.value = "";
 }
+
+// Добавим логгирование в обработчик question_response
+socket.on('question_response', function(data) {
+    console.log('Получен ответ на вопрос:', data); // Для отладки
+    
+    // Добавляем ответ в чат
+    addMessage("Система", `На вопрос "${data.question}" ответ: ${data.response}`);
+    
+    // Затемняем неподходящие числа
+    if (data.dim_numbers && data.dim_numbers.length) {
+        console.log('Числа для затемнения:', data.dim_numbers); // Для отладки
+        data.dim_numbers.forEach(n => dimmedNumbers.add(n));
+        renderPage();
+    }
+});
 
 function addMessage(sender, text) {
   const div = document.createElement("div");
@@ -155,4 +161,32 @@ function checkForQuestion(message) {
     ];
     
     return questionPatterns.some(pattern => pattern.test(message));
+}
+
+
+
+
+
+// Добавим проверку перед затемнением
+
+function renderPage() {
+    console.log('Рендерим страницу, затемненные числа:', Array.from(dimmedNumbers)); // Для отладки
+    numberGrid.innerHTML = "";
+    const half = allNumbers.length / 2;
+    const start = currentPage * half;
+    const end = start + half;
+    const pageNumbers = allNumbers.slice(start, end);
+
+    for (const num of pageNumbers) {
+        const el = document.createElement("div");
+        el.className = "number";
+        if (dimmedNumbers.has(num)) {
+            el.classList.add("dimmed");
+            console.log('Затемняем число:', num); // Для отладки
+        }
+        el.textContent = num;
+        numberGrid.appendChild(el);
+    }
+
+    pageSpan.textContent = currentPage + 1;
 }

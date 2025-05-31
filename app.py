@@ -380,26 +380,44 @@ def handle_chat_message(data):
     room = data.get('room')
     session_id = data.get('session_id')
     message = data.get('message')
-    role = None
-
+    
     # Определяем роль отправителя
+    sender_role = None
     if room in room_roles:
-        for r, sid in room_roles[room].items():
-            if sid == session_id:
-                role = r
-                break
-
-    # Название отправителя
-    sender = "Неизвестный"
-    if role == "guesser":
-        sender = "Угадывающий"
-    elif role == "creator":
-        sender = "Загадывающий"
-
+        if room_roles[room].get('guesser') == session_id:
+            sender_role = "Угадывающий"
+        elif room_roles[room].get('creator') == session_id:
+            sender_role = "Загадывающий"
+    
+    # Если это вопрос о числе - обрабатываем
+    if is_number_question(message) and sender_role == "Угадывающий":
+        secret_number = rooms.get(room, {}).get('secret_number')
+        if secret_number is not None:
+            response, dim_numbers = process_number_question(secret_number, message)
+            
+            emit('question_response', {
+                'question': message,
+                'response': response,
+                'dim_numbers': dim_numbers,
+                'sender': sender_role
+            }, room=room)
+            return
+    
+    # Обычное сообщение
     emit('chat_message', {
-        'sender': sender,
+        'sender': sender_role or "Неизвестный",
         'message': message
     }, room=room)
+    
+def is_number_question(text):
+    question_patterns = [
+        r'число (больше|меньше) -?\d+\??',
+        r'число (простое|чётное|нечётное|двузначное|однозначное|трёхзначное|положительное|отрицательное)\??',
+        r'число является (квадратом|кубом)\??',
+        r'это число -?\d+\??'
+    ]
+    text = text.lower().strip()
+    return any(re.search(pattern, text) for pattern in question_patterns)
         
 @app.route('/game2/guesser')
 def game_guesser():
