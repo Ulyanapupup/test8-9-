@@ -1,0 +1,34 @@
+<!-- templates/game.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Комната {{ room }}</title>
+</head>
+<body>
+  <h1>Код комнаты: {{ room }}</h1>
+  <p>Подключено игроков: <span id="playerCount">{{ player_count }}</span></p>
+  <p id="status"></p>
+
+  {% if is_creator %}
+	  <div id="modeSelection" style="display: none;">
+		<h2>Выберите режим игры</h2>
+		<button onclick="chooseMode('2.1')">Режим 2.1 (красный)</button>
+		<button onclick="chooseMode('2.2')">Режим 2.2 (зеленый)</button>
+	  </div>
+	  <p id="waitingForPlayers" style="display: none;">Ожидаем подключения второго игрока...</p>
+	{% else %}
+	  <p>Ожидаем выбор режима создателем комнаты...</p>
+	{% endif %}
+  
+  <button onclick="window.location.href='/room_setup'">Выйти из комнаты</button>
+
+  <script>
+    window.roomCode = "{{ room }}";
+    window.isCreator = {{ 'true' if is_creator else 'false' }};
+    window.sessionId = "{{ session['session_id'] }}";
+  </script>
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="/static/game.js"></script>
+</body>
+</html>

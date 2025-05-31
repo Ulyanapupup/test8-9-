@@ -1,0 +1,48 @@
+<!-- game_mode_1_2.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Режим 1.2</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h1>Компьютер угадывает</h1>
+
+  <div id="setup">
+    <label>Загадайте число от <span id="min-range-setup"></span> до <span id="max-range-setup"></span>:</label>
+    <input type="number" id="user-secret" />
+    <button id="start-button">Начать</button>
+  </div>
+
+  <div id="game" style="display:none;">
+	<div id="chat">
+		<div id="messages"></div> <!-- Сюда будем добавлять сообщения -->
+  </div>
+  
+  <div id="input-area">
+    <input id="answer" placeholder="да / нет" />
+    <button id="send-button">Ответить</button>
+  </div>
+  
+  <br><hr><br>
+  
+  <div id="status">
+	  <p id="secret-number" style="font-weight:bold;"></p>
+	  <div id="result-banner-container"></div>
+	</div>
+
+    <button onclick="exitGame()">Выйти из игры</button>
+  </div>
+
+  <!-- Сначала questionPool.js -->
+  <script src="{{ url_for('static', filename='questionPool.js') }}"></script>
+  <!-- Потом ваш основной скрипт -->
+  <script>
+	window.minRange = {{ min_range }};
+	window.maxRange = {{ max_range }};
+	</script>
+	<script src="{{ url_for('static', filename='game_mode_1_2.js') }}"></script>
+
+</body>
+</html>

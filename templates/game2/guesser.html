@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Угадывающий</title>
+  <style>
+    body {
+      display: flex;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+    }
+
+    /* Чат */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      background: #f9f9f9;
+      padding: 10px;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+    }
+
+    .message {
+      margin-bottom: 8px;
+    }
+
+    .input-area {
+      display: flex;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 8px;
+      font-size: 16px;
+    }
+
+    .input-area button {
+      padding: 8px 12px;
+      font-size: 16px;
+    }
+
+    /* Панель угадывающего */
+    .number-panel {
+      width: 300px;
+      padding: 10px;
+      background-color: #f0f4f7;
+      overflow-y: auto;
+    }
+
+    .number-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .number {
+      width: 40px;
+      height: 30px;
+      text-align: center;
+      line-height: 30px;
+      background-color: #ffffff;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    .number.dimmed {
+      background-color: #eee;
+      color: #aaa;
+    }
+
+    .pagination {
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .pagination button {
+      margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <input type="text" id="chat-input" placeholder="Задай вопрос...">
+      <button onclick="sendMessage()">Отправить</button>
+    </div>
+  </div>
+
+  <div class="number-panel">
+    <h3>Диапазон: -1000 до 1000</h3>
+    <div id="number-grid" class="number-grid"></div>
+    <div class="pagination">
+      <button onclick="prevPage()">◀</button>
+      <span id="page-number">1</span>
+      <button onclick="nextPage()">▶</button>
+    </div>
+  </div>
+
+  <!-- Подключаем Socket.IO -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script>
+    const messagesDiv = document.getElementById("messages");
+    const chatInput = document.getElementById("chat-input");
+    const numberGrid = document.getElementById("number-grid");
+    const pageSpan = document.getElementById("page-number");
+
+    let currentPage = 0;
+    const allNumbers = Array.from({ length: 2001 }, (_, i) => i - 1000);
+    let dimmedNumbers = new Set();
+
+    function renderPage() {
+      numberGrid.innerHTML = "";
+      const half = allNumbers.length / 2;
+      const start = currentPage * half;
+      const end = start + half;
+      const pageNumbers = allNumbers.slice(start, end);
+
+      for (const num of pageNumbers) {
+        const el = document.createElement("div");
+        el.className = "number";
+        if (dimmedNumbers.has(num)) {
+          el.classList.add("dimmed");
+        }
+        el.textContent = num;
+        numberGrid.appendChild(el);
+      }
+
+      pageSpan.textContent = currentPage + 1;
+    }
+
+    function nextPage() {
+      if (currentPage < 1) {
+        currentPage++;
+        renderPage();
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 0) {
+        currentPage--;
+        renderPage();
+      }
+    }
+
+    renderPage();
+
+    // --- ЧАТ ЧЕРЕЗ SOCKET.IO ---
+    const socket = io();
+
+    // Эти значения будут подставлены Flask'ом
+    const sessionId = "{{ session['session_id'] }}";
+    const room = "{{ room }}";
+
+    function sendMessage() {
+      const msg = chatInput.value.trim();
+      if (!msg) return;
+
+      // Отображаем своё сообщение
+      addMessage("Вы", msg);
+
+      // Отправляем на сервер
+      socket.emit("chat_message", {
+        room: room,
+        session_id: sessionId,
+        message: msg
+      });
+
+      chatInput.value = "";
+    }
+
+    function addMessage(sender, text) {
+      const div = document.createElement("div");
+      div.className = "message";
+      div.textContent = `${sender}: ${text}`;
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // Получение сообщения от сервера
+    socket.on("chat_message", function (data) {
+      if (data.sender !== "Вы") {
+        addMessage(data.sender, data.message);
+      }
+    });
+
+    // Поддержка Enter для отправки
+    chatInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>

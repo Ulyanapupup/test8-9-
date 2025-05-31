@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Выбор диапазона</title>
+</head>
+<body>
+  <h1>Выберите диапазон для загадывания числа</h1>
+  <select id="range-select">
+    <option value="0_100">0 — 100</option>
+    <option value="-100_100">-100 — 100</option>
+    <option value="-1000_1000">-1000 — 1000</option>
+  </select>
+  <button onclick="goToGame()">Далее</button>
+
+  <script>
+    function goToGame() {
+      const sel = document.getElementById('range-select').value;
+      // Передадим диапазон в параметры URL
+      window.location.href = `/game_mode_1_2?range=${sel}`;
+    }
+  </script>
+</body>
+</html>

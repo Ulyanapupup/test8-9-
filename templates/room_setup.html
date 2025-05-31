@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Создать или войти в комнату</title>
+</head>
+<body>
+  <h1>Игровая комната</h1>
+
+  <section>
+    <h2>Войти в существующую комнату</h2>
+    <form action="/game" method="get">
+      <label for="roomInput">Введите код комнаты:</label>
+      <input type="text" name="room" id="roomInput" required maxlength="6" pattern="[A-Z0-9]{6}" title="6 заглавных букв или цифр" />
+      <button type="submit">Войти</button>
+    </form>
+  </section>
+
+  <hr>
+
+  <section>
+    <h2>Создать новую случайную комнату</h2>
+    <form id="createForm" action="/game" method="get">
+      <input type="hidden" name="room" id="generatedRoomCode" />
+      <button type="submit" id="createBtn">Создать комнату</button>
+    </form>
+  </section>
+  <button onclick="window.location.href='/'">Назад на главную</button>
+  
+
+  <script>
+    // Генерируем код комнаты до отправки формы создания
+    document.getElementById('createBtn').addEventListener('click', function(e) {
+      const roomCode = Math.random().toString(36).substr(2, 6).toUpperCase();
+      document.getElementById('generatedRoomCode').value = roomCode;
+    });
+  </script>
+</body>
+</html>
+

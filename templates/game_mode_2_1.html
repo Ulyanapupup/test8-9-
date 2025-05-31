@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Режим 2.1 (Красный)</title>
+  <style>
+    body { 
+      background-color: red; 
+      color: white;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    .role-button {
+	  padding: 10px 20px;
+	  margin: 10px;
+	  font-size: 16px;
+	  cursor: pointer;
+	  border: 2px solid white;
+	  background-color: darkred;
+	  color: white;
+	  transition: all 0.3s;
+	}
+
+	.role-button.selected {
+	  background-color: white;
+	  color: red;
+	  font-weight: bold;
+	}
+
+	.role-button:disabled {
+	  background-color: #500;
+	  color: #999;
+	  cursor: not-allowed;
+	}
+
+	#start-game {
+	  padding: 15px 30px;
+	  font-size: 18px;
+	  background-color: #4CAF50;
+	  color: white;
+	  border: none;
+	  border-radius: 5px;
+	  cursor: pointer;
+	  margin-top: 20px;
+	}
+
+	#start-game:disabled {
+	  background-color: #cccccc;
+	  cursor: not-allowed;
+	}
+  </style>
+</head>
+<body>
+  <h1>Режим 2.1 (Красный)</h1>
+  <p>Комната: {{ room }}</p>
+  
+  <div id="role-selection">
+    <h3>Выберите роль:</h3>
+    <button id="role-guesser" class="role-button" onclick="chooseRole('guesser')">Угадывающий</button>
+    <button id="role-creator" class="role-button" onclick="chooseRole('creator')">Загадывающий</button>
+  </div>
+  
+  <div id="status-message"></div>
+  
+  <button id="start-game" disabled onclick="startGame()">Играть</button>
+  
+  <button id="leave-game">Покинуть игру</button>
+  
+  <!-- В конце body перед закрывающим тегом -->
+	<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+	<script>
+	  // Убедитесь, что переменные определены
+	  window.session_id = "{{ session['session_id'] }}";
+	  window.room = "{{ room }}";
+	</script>
+	<script src="{{ url_for('static', filename='script_2_1.js') }}"></script>
+</body>
+</html>
