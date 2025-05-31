@@ -92,10 +92,14 @@
 
     // --- ЧАТ С SOCKET.IO ---
     const socket = io();
-
-    // Эти переменные подставит Flask (у тебя в app.py это уже есть)
-    const sessionId = "{{ session['session_id'] }}";
+	const sessionId = "{{ session['session_id'] }}";
     const room = "{{ room }}";
+	
+	// После socket = io();
+	socket.emit("join_game_room", {
+	  room: room,
+	  session_id: sessionId
+	});
 
     function sendMessage() {
       const msg = chatInput.value.trim();

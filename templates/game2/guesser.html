@@ -156,11 +156,15 @@
 
     // --- ЧАТ ЧЕРЕЗ SOCKET.IO ---
     const socket = io();
-
-    // Эти значения будут подставлены Flask'ом
-    const sessionId = "{{ session['session_id'] }}";
+	const sessionId = "{{ session['session_id'] }}";
     const room = "{{ room }}";
-
+	
+	// После socket = io();
+	socket.emit("join_game_room", {
+	  room: room,
+	  session_id: sessionId
+	});
+    
     function sendMessage() {
       const msg = chatInput.value.trim();
       if (!msg) return;

@@ -404,12 +404,12 @@ def handle_chat_message(data):
 @app.route('/game2/guesser')
 def game_guesser():
     room = request.args.get('room')
-    return render_template('game2/guesser.html', room=room)
+    return render_template('game2/guesser.html', room=room, session=session)
 
 @app.route('/game2/creator')
 def game_creator():
     room = request.args.get('room')
-    return render_template('game2/creator.html', room=room)
+    return render_template('game2/creator.html', room=room, session=session)
     
 @app.route('/debug/templates')
 def debug_templates():
