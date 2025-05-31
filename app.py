@@ -381,31 +381,37 @@ def handle_chat_message(data):
     session_id = data.get('session_id')
     message = data.get('message')
     
-    # Определяем роль отправителя
-    sender_role = None
+    # Определяем отправителя
+    sender = "Неизвестный"
     if room in room_roles:
         if room_roles[room].get('guesser') == session_id:
-            sender_role = "Угадывающий"
+            sender = "Угадывающий"
         elif room_roles[room].get('creator') == session_id:
-            sender_role = "Загадывающий"
+            sender = "Загадывающий"
     
-    # Если это вопрос о числе - обрабатываем
-    if is_number_question(message) and sender_role == "Угадывающий":
+    # Проверяем, является ли сообщение вопросом о числе от угадывающего
+    if sender == "Угадывающий" and is_number_question(message):
         secret_number = rooms.get(room, {}).get('secret_number')
         if secret_number is not None:
             response, dim_numbers = process_number_question(secret_number, message)
             
+            # Отправляем ответ на вопрос
             emit('question_response', {
                 'question': message,
                 'response': response,
-                'dim_numbers': dim_numbers,
-                'sender': sender_role
+                'dim_numbers': dim_numbers
+            }, room=room)
+            
+            # И обычное сообщение тоже отправляем
+            emit('chat_message', {
+                'sender': sender,
+                'message': message
             }, room=room)
             return
     
     # Обычное сообщение
     emit('chat_message', {
-        'sender': sender_role or "Неизвестный",
+        'sender': sender,
         'message': message
     }, room=room)
     

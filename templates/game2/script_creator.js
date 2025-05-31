@@ -33,18 +33,20 @@ socket.emit("join_game_room", {
 });
 
 function sendMessage() {
-  const msg = chatInput.value.trim();
-  if (!msg) return;
+    const msg = chatInput.value.trim();
+    if (!msg) return;
 
-  // Отправляем на сервер
-  socket.emit("chat_message", {
-	room: room,
-	session_id: sessionId,
-	message: msg
-  });
+    // Отправляем на сервер
+    socket.emit("chat_message", {
+        room: room,
+        session_id: sessionId,
+        message: msg
+    });
 
-  addMessage("Вы", msg);
-  chatInput.value = "";
+    // Добавляем сообщение локально только для отправителя
+    addMessage("Вы", msg);
+    
+    chatInput.value = "";
 }
 
 function addMessage(sender, text) {
@@ -69,19 +71,28 @@ function showModal(title, message, subtitle, buttonText) {
   document.body.appendChild(modal);
 }
 
-socket.on("chat_message", function (data) {
-  if (data.sender !== "Вы") {
-	addMessage(data.sender, data.message);
-  }
+// Обработчик входящих сообщений (для ОБОИХ файлов)
+socket.on('chat_message', function(data) {
+    // Не добавляем сообщение, если оно от нас (чтобы избежать дублирования)
+    if (data.sender !== "Вы") {
+        addMessage(data.sender, data.message);
+    }
 });
 
 chatInput.addEventListener("keydown", function (e) {
   if (e.key === "Enter") sendMessage();
 });
 
-// Добавим обработчик для вопросов
+// Обработчик ответов на вопросы (только для guesser.js)
 socket.on('question_response', function(data) {
-  addMessage("Система", `На вопрос "${data.question}" ответ: ${data.response}`);
+    // Добавляем ответ системы
+    addMessage("Система", `На вопрос "${data.question}" ответ: ${data.response}`);
+    
+    // Затемняем числа
+    if (data.dim_numbers && data.dim_numbers.length) {
+        data.dim_numbers.forEach(n => dimmedNumbers.add(n));
+        renderPage();
+    }
 });
 
 // Добавим обработчик победы
